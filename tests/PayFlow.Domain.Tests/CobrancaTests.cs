@@ -56,7 +56,7 @@ public class CobrancaTests
             () => new Cobranca("Test", 100, DateTime.UtcNow.AddDays(-1)));
     }
 
-    // Confirm
+    // Confirmar
 
     [Fact]
     public void Confirmar_WhenPending_ShouldChangeStatusToConfirmada()
@@ -78,7 +78,7 @@ public class CobrancaTests
         Assert.Throws<DomainException>(() => cobranca.Confirmar());
     }
 
-    // Reg payment
+    // Registrar pagamento
 
     [Fact]
     public void RegistrarPagamento_WhenConfirmed_ShouldChangeStatusToPaga()
@@ -100,7 +100,7 @@ public class CobrancaTests
         Assert.Throws<DomainException>(() => cobranca.RegistrarPagamento());
     }
 
-    // Cancel
+    // Cancelar
 
     [Fact]
     public void Cancelar_WhenPending_ShouldChangeStatusToCancelada()
