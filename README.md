@@ -1,12 +1,12 @@
 # PayFlow
 
-API de pagamentos e cobranças em .NET 8 com microserviços, CQRS, domínio rico e processamento de arquivos CNAB.
+Payments and billing API built with .NET 8, featuring microservices architecture, CQRS, rich domain model and CNAB file processing.
 
-> 🚧 Projeto em desenvolvimento
+> 🚧 Work in progress
 
 ---
 
-## Arquitetura
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -18,7 +18,7 @@ API de pagamentos e cobranças em .NET 8 com microserviços, CQRS, domínio rico
 │  │                  │   Kafka   │                   │        │
 │  │  • Controllers   │           │  • Kafka Consumer │        │
 │  │  • CQRS/MediatR  │           │  • CNAB Parser    │        │
-│  │  • Domain Rico   │           │  • Webhooks       │        │
+│  │  • Rich Domain   │           │  • Webhooks       │        │
 │  │  • Repository    │           │                   │        │
 │  └───────┬──────────┘           └───────────────────┘        │
 │          │                                                   │
@@ -32,60 +32,59 @@ API de pagamentos e cobranças em .NET 8 com microserviços, CQRS, domínio rico
 
 ## Tech Stack
 
-| Camada | Tecnologia |
+| Layer | Technology |
 |---|---|
-| Linguagem | C# / .NET 8 |
-| Banco de dados | PostgreSQL |
+| Language | C# / .NET 8 |
+| Database | PostgreSQL |
 | Cache | Redis |
-| Mensageria | Apache Kafka |
+| Messaging | Apache Kafka |
 | ORM | Entity Framework Core |
 | CQRS | MediatR |
-| Testes | xUnit, Moq |
-| Containerização | Docker / Docker Compose |
-| Versionamento | Git |
+| Testing | xUnit, Moq |
+| Containers | Docker / Docker Compose |
+| Version Control | Git |
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
 PayFlow/
 ├── src/
-│   ├── PayFlow.API/              # Microserviço 1 — API REST
-│   │   ├── Controllers/          # Endpoints REST
+│   ├── PayFlow.API/              # Microservice 1 — REST API
+│   │   ├── Controllers/          # REST endpoints
 │   │   ├── Application/
-│   │   │   ├── Commands/         # Operações de escrita (CQRS)
-│   │   │   └── Queries/          # Operações de leitura (CQRS)
-│   │   └── Middleware/           # Exception handling global
+│   │   │   ├── Commands/         # Write operations (CQRS)
+│   │   │   └── Queries/          # Read operations (CQRS)
+│   │   └── Middleware/           # Global exception handling
 │   │
-│   ├── PayFlow.Worker/           # Microserviço 2 — Background worker
+│   ├── PayFlow.Worker/           # Microservice 2 — Background worker
 │   │   ├── Consumers/            # Kafka consumers
-│   │   ├── CnabParser/           # Processamento de arquivos CNAB
-│   │   └── Webhooks/             # Notificações para clientes
+│   │   ├── CnabParser/           # CNAB return file processing
+│   │   └── Webhooks/             # Client notifications
 │   │
-│   ├── PayFlow.Domain/           # Domínio rico (entidades, value objects, regras)
+│   ├── PayFlow.Domain/           # Rich domain (entities, value objects, rules)
 │   │   ├── Entities/
 │   │   ├── ValueObjects/
 │   │   ├── Enums/
 │   │   └── Exceptions/
 │   │
-│   └── PayFlow.Infrastructure/   # Acesso a dados, cache, mensageria
+│   └── PayFlow.Infrastructure/   # Data access, cache, messaging
 │       ├── Persistence/          # DbContext, Repositories, Migrations
 │       ├── Cache/                # Redis
 │       └── Messaging/            # Kafka producer/consumer
 │
 ├── tests/
-│   ├── PayFlow.Domain.Tests/     # Testes unitários do domínio
-│   └── PayFlow.API.Tests/        # Testes de integração da API
+│   ├── PayFlow.Domain.Tests/     # Domain unit tests
+│   └── PayFlow.API.Tests/        # API integration tests
 │
 ├── docker-compose.yml
 └── README.md
 ```
 
-## Domínio
+## Domain
 
-O projeto utiliza **domínio rico** — as entidades encapsulam regras de negócio, validações e transições de estado internamente, com setters privados.
+This project follows a **rich domain model** approach — entities encapsulate business rules, validations and state transitions internally, with private setters.
 
 ```csharp
-// Exemplo simplificado
 public class Cobranca
 {
     public Guid Id { get; private set; }
@@ -94,7 +93,7 @@ public class Cobranca
 
     public Cobranca(decimal valor)
     {
-        if (valor <= 0) throw new DomainException("Valor deve ser positivo");
+        if (valor <= 0) throw new DomainException("Amount must be greater than zero");
         Id = Guid.NewGuid();
         Valor = valor;
         Status = StatusCobranca.Pendente;
@@ -103,61 +102,59 @@ public class Cobranca
     public void Confirmar()
     {
         if (Status != StatusCobranca.Pendente)
-            throw new DomainException("Só é possível confirmar cobranças pendentes");
+            throw new DomainException("Only pending charges can be confirmed");
         Status = StatusCobranca.Confirmada;
     }
 
     public void Cancelar()
     {
         if (Status == StatusCobranca.Paga)
-            throw new DomainException("Não é possível cancelar cobrança já paga");
+            throw new DomainException("Cannot cancel a charge that has already been paid");
         Status = StatusCobranca.Cancelada;
     }
 }
 ```
 
-## Endpoints Principais
+## Main Endpoints
 
-| Método | Rota | Descrição | Status |
+| Method | Route | Description | Status |
 |---|---|---|---|
-| `POST` | `/api/cobrancas` | Criar nova cobrança | `201 Created` |
-| `GET` | `/api/cobrancas/{id}` | Consultar cobrança por ID | `200 OK` |
-| `GET` | `/api/cobrancas` | Listar cobranças com filtros | `200 OK` |
-| `PATCH` | `/api/cobrancas/{id}/confirmar` | Confirmar cobrança | `204 No Content` |
-| `PATCH` | `/api/cobrancas/{id}/cancelar` | Cancelar cobrança | `204 No Content` |
-| `POST` | `/api/cnab/upload` | Upload de arquivo CNAB retorno | `202 Accepted` |
+| `POST` | `/api/cobrancas` | Create new charge | `201 Created` |
+| `GET` | `/api/cobrancas/{id}` | Get charge by ID | `200 OK` |
+| `GET` | `/api/cobrancas` | List charges with filters | `200 OK` |
+| `PATCH` | `/api/cobrancas/{id}/confirmar` | Confirm charge | `204 No Content` |
+| `PATCH` | `/api/cobrancas/{id}/cancelar` | Cancel charge | `204 No Content` |
+| `POST` | `/api/cnab/upload` | Upload CNAB return file | `202 Accepted` |
 
-## Fluxo da Aplicação
+## Application Flow
 
-1. Cliente cria uma cobrança via `POST /api/cobrancas`
-2. A API valida pelo domínio, persiste no PostgreSQL e publica evento `CobrancaCriada` no Kafka
-3. O Worker consome o evento e executa processamentos assíncronos
-4. Consultas frequentes de status usam cache Redis (pattern cache-aside, TTL 5 min)
-5. Arquivos CNAB de retorno são enviados via upload, processados pelo Worker e atualizam o status das cobranças
+1. Client creates a charge via `POST /api/cobrancas`
+2. The API validates through the domain, persists to PostgreSQL and publishes a `CobrancaCriada` event to Kafka
+3. The Worker consumes the event and runs async processing
+4. Frequent status queries use Redis cache (cache-aside pattern, 5 min TTL)
+5. CNAB return files are uploaded, processed by the Worker and update charge statuses accordingly
 
-## Como Rodar
+## Getting Started
 
 ```bash
-# Clonar o repositório
 git clone https://github.com/PedroRCampelo/PayFlow.git
 cd PayFlow
 
-# Subir toda a infraestrutura
 docker-compose up -d
 
-# A API estará disponível em http://localhost:5000
-# Swagger em http://localhost:5000/swagger
+# API available at http://localhost:5000
+# Swagger at http://localhost:5000/swagger
 ```
 
-## Padrões e Práticas
+## Patterns & Practices
 
-- **CQRS** — separação de comandos (escrita) e queries (leitura) via MediatR
-- **Repository Pattern** — abstração do acesso a dados sobre EF Core
-- **Domínio Rico** — entidades com comportamento, validações internas e setters privados
-- **SOLID** — princípios aplicados em toda a codebase
-- **Exception Handling Global** — middleware centralizado retornando ProblemDetails (RFC 7807)
-- **Testes Automatizados** — unitários no domínio (xUnit + Moq) e integração na API (WebApplicationFactory)
+- **CQRS** — command/query separation via MediatR
+- **Repository Pattern** — data access abstraction over EF Core
+- **Rich Domain Model** — entities with behavior, internal validations and private setters
+- **SOLID** — principles applied throughout the codebase
+- **Global Exception Handling** — centralized middleware returning ProblemDetails (RFC 7807)
+- **Automated Testing** — domain unit tests (xUnit + Moq) and API integration tests (WebApplicationFactory)
 
-## Autor
+## Author
 
 **Pedro Campelo** — [GitHub](https://github.com/PedroRCampelo) · [LinkedIn](https://linkedin.com/in/pedro-campêlo)

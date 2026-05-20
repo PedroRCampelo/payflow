@@ -15,20 +15,20 @@ public class Cobranca
     public DateTime? PagaEm { get; private set; }
     public DateTime DataVencimento { get; private set; }
 
-    // EF Core precisa de um construtor sem parâmetros (private pra ninguém usar fora)
+    // Required by EF Core for object materialization
     private Cobranca() { }
 
-    // Construtor público com validações — quem cria uma Cobrança PRECISA passar dados válidos
+    
     public Cobranca(string descricao, decimal valor, DateTime dataVencimento)
     {
         if (string.IsNullOrWhiteSpace(descricao))
-            throw new DomainException("Descrição é obrigatória.");
+            throw new DomainException("Description is required.");
 
         if (valor <= 0)
-            throw new DomainException("Valor deve ser maior que zero.");
+            throw new DomainException("Amount must be greater than zero.");
 
         if (dataVencimento.Date < DateTime.UtcNow.Date)
-            throw new DomainException("Data de vencimento não pode ser no passado.");
+            throw new DomainException("Due date cannot be in the past.");
 
         Id = Guid.NewGuid();
         Descricao = descricao.Trim();
@@ -38,13 +38,13 @@ public class Cobranca
         CriadaEm = DateTime.UtcNow;
     }
 
-    // ── Métodos de comportamento (isso é o domínio RICO) ──
+    // Behavior methods
 
     public void Confirmar()
     {
         if (Status != StatusCobranca.Pendente)
             throw new DomainException(
-                $"Só é possível confirmar cobranças pendentes. Status atual: {Status}.");
+                $"Only pending charges can be confirmed. Current status: {Status}.");
 
         Status = StatusCobranca.Confirmada;
         ConfirmadaEm = DateTime.UtcNow;
@@ -54,7 +54,7 @@ public class Cobranca
     {
         if (Status != StatusCobranca.Confirmada)
             throw new DomainException(
-                $"Só é possível registrar pagamento de cobranças confirmadas. Status atual: {Status}.");
+                $"Only confirmed charges can be paid. Current status: {Status}.");
 
         Status = StatusCobranca.Paga;
         PagaEm = DateTime.UtcNow;
@@ -63,10 +63,10 @@ public class Cobranca
     public void Cancelar()
     {
         if (Status == StatusCobranca.Paga)
-            throw new DomainException("Não é possível cancelar uma cobrança já paga.");
+            throw new DomainException("Cannot cancel a charge that has already been paid.");
 
         if (Status == StatusCobranca.Cancelada)
-            throw new DomainException("Cobrança já está cancelada.");
+            throw new DomainException("Charge is already cancelled.");
 
         Status = StatusCobranca.Cancelada;
         CanceladaEm = DateTime.UtcNow;
@@ -76,12 +76,12 @@ public class Cobranca
     {
         if (Status != StatusCobranca.Pendente && Status != StatusCobranca.Confirmada)
             throw new DomainException(
-                $"Só cobranças pendentes ou confirmadas podem vencer. Status atual: {Status}.");
+                $"Only pending or confirmed charges can be marked as overdue. Current status: {Status}.");
 
         Status = StatusCobranca.Vencida;
     }
 
-    // ── Queries do domínio ──
+    // Domain queries
 
     public bool EstaPendente() => Status == StatusCobranca.Pendente;
     public bool PodeSerCancelada() => Status != StatusCobranca.Paga && Status != StatusCobranca.Cancelada;

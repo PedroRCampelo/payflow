@@ -6,22 +6,17 @@ namespace PayFlow.Domain.Tests;
 
 public class CobrancaTests
 {
-    // ═══════════════════════════════════════
-    // CRIAÇÃO
-    // ═══════════════════════════════════════
+    // Creation
 
     [Fact]
-    public void Criar_ComDadosValidos_DeveCriarComStatusPendente()
+    public void Constructor_WithValidData_ShouldCreateWithPendingStatus()
     {
-        // Arrange
-        var descricao = "Mensalidade Janeiro";
+        var descricao = "Monthly payment";
         var valor = 150.00m;
         var vencimento = DateTime.UtcNow.AddDays(30);
 
-        // Act
         var cobranca = new Cobranca(descricao, valor, vencimento);
 
-        // Assert
         Assert.Equal(descricao, cobranca.Descricao);
         Assert.Equal(valor, cobranca.Valor);
         Assert.Equal(StatusCobranca.Pendente, cobranca.Status);
@@ -29,103 +24,88 @@ public class CobrancaTests
     }
 
     [Fact]
-    public void Criar_ComValorZero_DeveLancarDomainException()
+    public void Constructor_WithZeroAmount_ShouldThrowDomainException()
     {
-        // Arrange & Act & Assert
         var exception = Assert.Throws<DomainException>(
-            () => new Cobranca("Teste", 0, DateTime.UtcNow.AddDays(30)));
+            () => new Cobranca("Test", 0, DateTime.UtcNow.AddDays(30)));
 
-        Assert.Contains("maior que zero", exception.Message);
+        Assert.Contains("greater than zero", exception.Message);
     }
 
     [Fact]
-    public void Criar_ComValorNegativo_DeveLancarDomainException()
+    public void Constructor_WithNegativeAmount_ShouldThrowDomainException()
     {
         Assert.Throws<DomainException>(
-            () => new Cobranca("Teste", -100, DateTime.UtcNow.AddDays(30)));
+            () => new Cobranca("Test", -100, DateTime.UtcNow.AddDays(30)));
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Criar_ComDescricaoInvalida_DeveLancarDomainException(string? descricao)
+    public void Constructor_WithInvalidDescription_ShouldThrowDomainException(string? descricao)
     {
         Assert.Throws<DomainException>(
             () => new Cobranca(descricao!, 100, DateTime.UtcNow.AddDays(30)));
     }
 
     [Fact]
-    public void Criar_ComVencimentoNoPassado_DeveLancarDomainException()
+    public void Constructor_WithPastDueDate_ShouldThrowDomainException()
     {
         Assert.Throws<DomainException>(
-            () => new Cobranca("Teste", 100, DateTime.UtcNow.AddDays(-1)));
+            () => new Cobranca("Test", 100, DateTime.UtcNow.AddDays(-1)));
     }
 
-    // ═══════════════════════════════════════
-    // CONFIRMAR
-    // ═══════════════════════════════════════
+    // Confirm
 
     [Fact]
-    public void Confirmar_QuandoPendente_DeveAlterarStatusParaConfirmada()
+    public void Confirmar_WhenPending_ShouldChangeStatusToConfirmada()
     {
-        // Arrange
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
 
-        // Act
         cobranca.Confirmar();
 
-        // Assert
         Assert.Equal(StatusCobranca.Confirmada, cobranca.Status);
         Assert.NotNull(cobranca.ConfirmadaEm);
     }
 
     [Fact]
-    public void Confirmar_QuandoJaConfirmada_DeveLancarDomainException()
+    public void Confirmar_WhenAlreadyConfirmed_ShouldThrowDomainException()
     {
-        // Arrange
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
         cobranca.Confirmar();
 
-        // Act & Assert
         Assert.Throws<DomainException>(() => cobranca.Confirmar());
     }
 
-    // ═══════════════════════════════════════
-    // REGISTRAR PAGAMENTO
-    // ═══════════════════════════════════════
+    // Reg payment
 
     [Fact]
-    public void RegistrarPagamento_QuandoConfirmada_DeveAlterarStatusParaPaga()
+    public void RegistrarPagamento_WhenConfirmed_ShouldChangeStatusToPaga()
     {
-        // Arrange
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
         cobranca.Confirmar();
 
-        // Act
         cobranca.RegistrarPagamento();
 
-        // Assert
         Assert.Equal(StatusCobranca.Paga, cobranca.Status);
         Assert.NotNull(cobranca.PagaEm);
     }
 
     [Fact]
-    public void RegistrarPagamento_QuandoPendente_DeveLancarDomainException()
+    public void RegistrarPagamento_WhenPending_ShouldThrowDomainException()
     {
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
 
         Assert.Throws<DomainException>(() => cobranca.RegistrarPagamento());
     }
 
-    // ═══════════════════════════════════════
-    // CANCELAR
-    // ═══════════════════════════════════════
+    // Cancel
 
     [Fact]
-    public void Cancelar_QuandoPendente_DeveAlterarStatusParaCancelada()
+    public void Cancelar_WhenPending_ShouldChangeStatusToCancelada()
     {
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
 
         cobranca.Cancelar();
 
@@ -134,9 +114,9 @@ public class CobrancaTests
     }
 
     [Fact]
-    public void Cancelar_QuandoConfirmada_DeveAlterarStatusParaCancelada()
+    public void Cancelar_WhenConfirmed_ShouldChangeStatusToCancelada()
     {
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
         cobranca.Confirmar();
 
         cobranca.Cancelar();
@@ -145,53 +125,49 @@ public class CobrancaTests
     }
 
     [Fact]
-    public void Cancelar_QuandoPaga_DeveLancarDomainException()
+    public void Cancelar_WhenAlreadyPaid_ShouldThrowDomainException()
     {
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
         cobranca.Confirmar();
         cobranca.RegistrarPagamento();
 
         var exception = Assert.Throws<DomainException>(() => cobranca.Cancelar());
-        Assert.Contains("já paga", exception.Message);
+        Assert.Contains("already been paid", exception.Message);
     }
 
     [Fact]
-    public void Cancelar_QuandoJaCancelada_DeveLancarDomainException()
+    public void Cancelar_WhenAlreadyCancelled_ShouldThrowDomainException()
     {
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
         cobranca.Cancelar();
 
         Assert.Throws<DomainException>(() => cobranca.Cancelar());
     }
 
-    // ═══════════════════════════════════════
-    // QUERIES DO DOMÍNIO
-    // ═══════════════════════════════════════
+    // Domain queries
 
     [Fact]
-    public void PodeSerCancelada_QuandoPendente_DeveRetornarTrue()
+    public void PodeSerCancelada_WhenPending_ShouldReturnTrue()
     {
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
 
         Assert.True(cobranca.PodeSerCancelada());
     }
 
     [Fact]
-    public void PodeSerCancelada_QuandoPaga_DeveRetornarFalse()
+    public void PodeSerCancelada_WhenPaid_ShouldReturnFalse()
     {
-        var cobranca = CriarCobrancaValida();
+        var cobranca = CreateValidCobranca();
         cobranca.Confirmar();
         cobranca.RegistrarPagamento();
 
         Assert.False(cobranca.PodeSerCancelada());
     }
 
-    // ═══════════════════════════════════════
-    // HELPER
-    // ═══════════════════════════════════════
+    // Helper
 
-    private static Cobranca CriarCobrancaValida()
+    private static Cobranca CreateValidCobranca()
     {
-        return new Cobranca("Mensalidade", 100.00m, DateTime.UtcNow.AddDays(30));
+        return new Cobranca("Monthly payment", 100.00m, DateTime.UtcNow.AddDays(30));
     }
 }

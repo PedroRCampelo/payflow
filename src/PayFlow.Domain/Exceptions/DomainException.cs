@@ -8,5 +8,5 @@ public class DomainException : Exception
 public class NotFoundException : Exception
 {
     public NotFoundException(string entity, object id)
-        : base($"{entity} com ID '{id}' não encontrado(a).") { }
+        : base($"{entity} with ID '{id}' was not found.") { }
 }
