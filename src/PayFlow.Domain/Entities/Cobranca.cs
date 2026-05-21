@@ -1,5 +1,6 @@
 using PayFlow.Domain.Enums;
 using PayFlow.Domain.Exceptions;
+using PayFlow.Domain.ValueObjects;
 
 namespace PayFlow.Domain.Entities;
 
@@ -7,7 +8,7 @@ public class Cobranca
 {
     public Guid Id { get; private set; }
     public string Descricao { get; private set; } = string.Empty;
-    public decimal Valor { get; private set; }
+    public Dinheiro Valor { get; private set; } = null!;
     public StatusCobranca Status { get; private set; }
     public DateTime CriadaEm { get; private set; }
     public DateTime? ConfirmadaEm { get; private set; }
@@ -15,16 +16,18 @@ public class Cobranca
     public DateTime? PagaEm { get; private set; }
     public DateTime DataVencimento { get; private set; }
 
+    private readonly List<Pagamento> _pagamentos = [];
+    public IReadOnlyCollection<Pagamento> Pagamentos => _pagamentos.AsReadOnly();
+
     // Required by EF Core for object materialization
     private Cobranca() { }
 
-    
-    public Cobranca(string descricao, decimal valor, DateTime dataVencimento)
+    public Cobranca(string descricao, Dinheiro valor, DateTime dataVencimento)
     {
         if (string.IsNullOrWhiteSpace(descricao))
             throw new DomainException("Description is required.");
 
-        if (valor <= 0)
+        if (valor.Valor <= 0)
             throw new DomainException("Amount must be greater than zero.");
 
         if (dataVencimento.Date < DateTime.UtcNow.Date)
@@ -50,11 +53,26 @@ public class Cobranca
         ConfirmadaEm = DateTime.UtcNow;
     }
 
+    public Pagamento AdicionarPagamento(Dinheiro valorPago, string? codigoTransacao = null)
+    {
+        if (Status != StatusCobranca.Confirmada)
+            throw new DomainException(
+                $"Payments can only be added to confirmed charges. Current status: {Status}.");
+
+        if (valorPago.Moeda != Valor.Moeda)
+            throw new DomainException(
+                $"Payment currency ({valorPago.Moeda}) must match charge currency ({Valor.Moeda}).");
+
+        var pagamento = new Pagamento(Id, valorPago.Valor, codigoTransacao);
+        _pagamentos.Add(pagamento);
+        return pagamento;
+    }
+
     public void RegistrarPagamento()
     {
         if (Status != StatusCobranca.Confirmada)
             throw new DomainException(
-                $"Only confirmed charges can be paid. Current status: {Status}.");
+                $"Only confirmed charges can be marked as paid. Current status: {Status}.");
 
         Status = StatusCobranca.Paga;
         PagaEm = DateTime.UtcNow;
