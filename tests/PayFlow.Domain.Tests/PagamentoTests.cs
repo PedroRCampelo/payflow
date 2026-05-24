@@ -7,12 +7,11 @@ namespace PayFlow.Domain.Tests;
 public class PagamentoTests
 {
     // Creation
-
     [Fact]
     public void Constructor_WithValidData_ShouldCreateWithProcessingStatus()
     {
         var cobrancaId = Guid.NewGuid();
-
+        // This test shouldn't exist, as the Pagamento class will be internal in the future. (Aggregate Root)
         var pagamento = new Pagamento(cobrancaId, 150.00m, "TXN-001");
 
         Assert.Equal(cobrancaId, pagamento.CobrancaId);
