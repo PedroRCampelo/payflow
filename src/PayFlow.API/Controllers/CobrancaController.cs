@@ -9,7 +9,7 @@ using PayFlow.Domain.ValueObjects;
 namespace PayFlow.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/[controller]")] // The [controller] is replaced by the class name without the suffix. CobrancasController → api/cobrancas
 public class CobrancasController : ControllerBase
 {
     private readonly ICobrancaRepository _repository;
