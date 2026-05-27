@@ -1,13 +1,18 @@
+using Microsoft.EntityFrameworkCore;
 using PayFlow.API.Endpoints;
 using PayFlow.Domain.Repositories;
-using PayFlow.Infrastructure.Repositories;
+using PayFlow.Infrastructure.Persistence;
+using PayFlow.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<ICobrancaRepository, InMemoryCobrancaRepository>();
+builder.Services.AddDbContext<PayFlowDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<ICobrancaRepository, CobrancaRepository>();
 
 var app = builder.Build();
 

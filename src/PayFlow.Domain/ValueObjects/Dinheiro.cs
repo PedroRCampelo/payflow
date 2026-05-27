@@ -7,7 +7,7 @@ public record Dinheiro
     public decimal Valor { get; }
     public string Moeda { get; }
 
-    public Dinheiro(decimal valor, string moeda = "BRL")
+    public Dinheiro(decimal valor, string moeda = "BRL") // "BRL" Default parameter
     {
         if (valor < 0)
             throw new DomainException("Amount cannot be negative.");

@@ -8,7 +8,7 @@ namespace PayFlow.Infrastructure.Repositories;
 // Temporary Repository
 public class InMemoryCobrancaRepository : ICobrancaRepository
 {
-    private readonly ConcurrentDictionary<Guid, Cobranca> _store = new();
+    private readonly ConcurrentDictionary<Guid, Cobranca> _store = new(); // ?
 
     public Task<Cobranca?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
     {

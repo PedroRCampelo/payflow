@@ -11,7 +11,8 @@ public static class CobrancaEndpoints
     public static void MapCobrancaEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/cobrancas");
-
+        
+        // Dependency Injection
         group.MapPost("", async (CriarCobrancaRequest request, ICobrancaRepository repository) =>
         {
             var valor = new Dinheiro(request.Valor, request.Moeda);
@@ -27,8 +28,8 @@ public static class CobrancaEndpoints
             var cobranca = await repository.ObterPorIdAsync(id);
 
             return cobranca is null
-                ? Results.NotFound()
-                : Results.Ok(MapToResponse(cobranca));
+                ? Results.NotFound() // If
+                : Results.Ok(MapToResponse(cobranca)); // Else
         });
 
         group.MapGet("", async (StatusCobranca? status, ICobrancaRepository repository) =>
@@ -65,7 +66,7 @@ public static class CobrancaEndpoints
         });
     }
 
-    private static CobrancaResponse MapToResponse(Cobranca cobranca)
+    private static CobrancaResponse MapToResponse(Cobranca cobranca) // ?
     {
         return new CobrancaResponse(
             cobranca.Id,

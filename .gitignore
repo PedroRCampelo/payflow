@@ -32,3 +32,6 @@ docker-compose.override.yml
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
+
+## Private
+EXPLANATION.md
